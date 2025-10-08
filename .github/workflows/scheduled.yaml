@@ -29,7 +29,6 @@ jobs:
           python=${{ matrix.python-version }}
         init-shell: bash
         environment-file:  dev/conda-env/test_env.yaml
-        cache-environment: true
 
     - name: Install package
       shell: bash -l {0}
