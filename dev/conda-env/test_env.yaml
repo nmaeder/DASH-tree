@@ -1,7 +1,6 @@
 # TODO: CUDA not installed by default
 name: serenityff-charge-test
 channels:
-  - pytorch
   - conda-forge
 dependencies:
   # Base depends
@@ -25,6 +24,6 @@ dependencies:
   - openff-toolkit = 0.10.0
   - rdkit
   # Machine Learning
-  - pytorch = 2.0.0
   - pip:
+    - pytorch == 2.0.0
     - torch_geometric == 2.3.0
