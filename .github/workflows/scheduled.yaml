@@ -1,0 +1,43 @@
+name: scheduled-tests
+
+on:
+  schedule:
+    - cron: "0 2 * * 6"
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}, Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest] 
+        python-version: ['3.10']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Additional info about the build
+      shell: bash
+      run: |
+        uname -a
+        df -h
+        ulimit -a
+
+    - uses: mamba-org/setup-micromamba@v1
+      with:
+        create-args: >-
+          python=${{ matrix.python-version }}
+        init-shell: bash
+        environment-file:  dev/conda-env/test_env.yaml
+        cache-environment: true
+
+    - name: Install package
+      shell: bash -l {0}
+      run: |
+        pip install . --no-deps
+        conda list
+
+    - name: Run tests
+      shell: bash -l {0}
+      run: |
+        pytest -v --color=yes --cov=serenityff --cov-report=xml --run-slow serenityff/charge/tests/ tests/
