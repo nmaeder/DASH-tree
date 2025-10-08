@@ -1,9 +1,7 @@
 name: dash
 channels:
-  - defaults
   - conda-forge
   - pytorch
-  - pyg
 dependencies:
   - python = 3.10
   - pip
@@ -17,4 +15,5 @@ dependencies:
   - openff-toolkit = 0.10.0
   - rdkit
   - pytorch = 2.0.0
-  - pyg = 2.3.0
+  - pip:
+    - torch_geometric == 2.3.0

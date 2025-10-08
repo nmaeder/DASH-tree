@@ -2,9 +2,7 @@
 name: serenityff-charge-test
 channels:
   - pytorch
-  - pyg
   - conda-forge
-  - defaults
 dependencies:
   # Base depends
   - python = 3.10
@@ -28,4 +26,5 @@ dependencies:
   - rdkit
   # Machine Learning
   - pytorch = 2.0.0
-  - pyg = 2.3.0
+  - pip:
+    - torch_geometric == 2.3.0
