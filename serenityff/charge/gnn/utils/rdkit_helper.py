@@ -8,9 +8,7 @@ from serenityff.charge.gnn.utils import CustomData, MolGraphConvFeaturizer
 from serenityff.charge.utils import Molecule
 
 
-def mols_from_sdf(
-    sdf_file: str, removeHs: Optional[bool] = False
-) -> Sequence[Molecule]:
+def mols_from_sdf(sdf_file: str, removeHs: Optional[bool] = False) -> Sequence[Molecule]:
     """
     Returns a Sequence of rdkit molecules read in from a .sdf file.
 
@@ -53,9 +51,7 @@ def get_mol_prop_as_tensor(prop_name: Optional[str], mol: Chem.Mol) -> pt.Tensor
         raise ValueError("Property name can not be None when no_y == False.")
     if not mol.HasProp(prop_name):
         raise ValueError(f"Property {prop_name} not found in molecule.")  # noqa E713
-    tensor = pt.tensor(
-        [float(x) for x in mol.GetProp(prop_name).split("|")], dtype=pt.float
-    )
+    tensor = pt.tensor([float(x) for x in mol.GetProp(prop_name).split("|")], dtype=pt.float)
     if pt.isnan(tensor).any():
         raise TypeError(f"Nan found in {prop_name}.")
     return tensor
