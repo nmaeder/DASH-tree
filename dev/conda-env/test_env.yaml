@@ -25,5 +25,5 @@ dependencies:
   - rdkit
   # Machine Learning
   - pip:
-    - pytorch == 2.0.0
+    - torch == 2.0.0
     - torch_geometric == 2.3.0
