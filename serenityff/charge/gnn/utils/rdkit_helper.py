@@ -8,9 +8,7 @@ from serenityff.charge.gnn.utils import CustomData, MolGraphConvFeaturizer
 from serenityff.charge.utils import Molecule
 
 
-def mols_from_sdf(
-    sdf_file: str, removeHs: Optional[bool] = False
-) -> Sequence[Molecule]:
+def mols_from_sdf(sdf_file: str, removeHs: Optional[bool] = False) -> Sequence[Molecule]:
     """
     Returns a Sequence of rdkit molecules read in from a .sdf file.
 
@@ -24,9 +22,7 @@ def mols_from_sdf(
     return Chem.SDMolSupplier(sdf_file, removeHs=removeHs)
 
 
-def get_mol_prop_as_array(
-    prop_name: Optional[str], mol: Chem.Mol, dtype: type = float
-) -> np.ndarray:
+def get_mol_prop_as_array(prop_name: Optional[str], mol: Chem.Mol, dtype: type = float) -> np.ndarray:
     """Get atomic properties from an RDKit molecule object as an array.
 
     The property is expected to be a string of '|' separated numerical
@@ -86,9 +82,7 @@ def get_mol_prop_as_tensor(prop_name: Optional[str], mol: Chem.Mol) -> pt.Tensor
     TypeError
         If any of the parsed property values are NaN or not convertable to float.
     """
-    return pt.from_numpy(
-        get_mol_prop_as_array(prop_name=prop_name, mol=mol, dtype=np.float32)
-    )
+    return pt.from_numpy(get_mol_prop_as_array(prop_name=prop_name, mol=mol, dtype=np.float32))
 
 
 def get_graph_from_mol(
