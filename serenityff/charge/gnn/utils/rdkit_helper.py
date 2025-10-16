@@ -22,41 +22,6 @@ def mols_from_sdf(sdf_file: str, removeHs: Optional[bool] = False) -> Sequence[M
     return Chem.SDMolSupplier(sdf_file, removeHs=removeHs)
 
 
-def get_mol_prop_as_tensor(prop_name: Optional[str], mol: Chem.Mol) -> pt.Tensor:
-    """Get atomic properties from an RDKit molecule object as a tensor.
-
-    The property is expected to be a string of '|' separated numerical
-    values, one for each atom in the molecule.
-
-    Parameters
-    ----------
-    prop_name
-        The name of the property to retrieve from the molecule.
-    mol
-        The RDKit molecule object.
-
-    Returns
-    -------
-    pt.Tensor
-        The atomic properties converted to a PyTorch tensor.
-
-    Raises
-    ------
-    ValueError
-        If `prop_name` is None or if the property is not found in the molecule.
-    TypeError
-        If any of the parsed property values are NaN or not convertable to float.
-    """
-    if prop_name is None:
-        raise ValueError("Property name can not be None when no_y == False.")
-    if not mol.HasProp(prop_name):
-        raise ValueError(f"Property {prop_name} not found in molecule.")  # noqa E713
-    tensor = pt.tensor([float(x) for x in mol.GetProp(prop_name).split("|")], dtype=pt.float)
-    if pt.isnan(tensor).any():
-        raise TypeError(f"Nan found in {prop_name}.")
-    return tensor
-
-
 def get_mol_prop_as_array(prop_name: Optional[str], mol: Chem.Mol) -> np.ndarray:
     """Get atomic properties from an RDKit molecule object as an array.
 
@@ -86,10 +51,38 @@ def get_mol_prop_as_array(prop_name: Optional[str], mol: Chem.Mol) -> np.ndarray
         raise ValueError("Property name can not be None when no_y == False.")
     if not mol.HasProp(prop_name):
         raise ValueError(f"Property {prop_name} not found in molecule.")  # noqa E713
-    array = np.array([float(x) for x in mol.GetProp(prop_name).split("|")])
+    array = np.fromstring(mol.GetProp(prop_name), sep="|", dtype=float)
     if np.isnan(array).any():
         raise TypeError(f"Nan found in {prop_name}.")
     return array
+
+
+def get_mol_prop_as_tensor(prop_name: Optional[str], mol: Chem.Mol) -> pt.Tensor:
+    """Get atomic properties from an RDKit molecule object as a tensor.
+
+    The property is expected to be a string of '|' separated numerical
+    values, one for each atom in the molecule.
+
+    Parameters
+    ----------
+    prop_name
+        The name of the property to retrieve from the molecule.
+    mol
+        The RDKit molecule object.
+
+    Returns
+    -------
+    pt.Tensor
+        The atomic properties converted to a PyTorch tensor.
+
+    Raises
+    ------
+    ValueError
+        If `prop_name` is None or if the property is not found in the molecule.
+    TypeError
+        If any of the parsed property values are NaN or not convertable to float.
+    """
+    return pt.from_numpy(get_mol_prop_as_array(prop_name=prop_name, mol=mol))
 
 
 def get_graph_from_mol(
