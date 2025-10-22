@@ -35,7 +35,7 @@ def sample_mol_missing_prop():
 def test_get_mol_prop_as_pt_tensor_success(sample_mol_with_prop):
     """Test successful retrieval of property as a tensor."""
     expected = pt.tensor([1.0, 2.5, -3.0], dtype=pt.float)
-    result = get_mol_prop_as_tpt_ensor("test_prop", sample_mol_with_prop)
+    result = get_mol_prop_as_pt_tensor("test_prop", sample_mol_with_prop)
     assert isinstance(result, pt.Tensor)
     assert pt.equal(result, expected)
 
