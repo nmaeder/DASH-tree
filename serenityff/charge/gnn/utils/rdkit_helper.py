@@ -1,4 +1,5 @@
-from typing import List, Optional, Sequence
+from collections.abc import Iterable
+from typing import Any, List, Optional, Sequence, Union
 
 import numpy as np
 import torch as pt
@@ -54,6 +55,30 @@ def get_mol_prop_as_pt_tensor(prop_name: Optional[str], mol: Chem.Mol) -> pt.Ten
     """
     return pt.from_numpy(get_mol_prop_as_np_array(prop_name=prop_name, mol=mol, dtype=np.float32))
 
+def set_mol_prop(iterable: Iterable, mol: Chem.Mol, key: str, forceoverwrite: bool = False, precision: int = 3)-> None:
+    """Set a numeric property on an RDKit molecule from an iterable of values.
+
+    This function converts a sequence of numeric values (such as a list, NumPy array,
+    or PyTorch tensor) into a string and stores it as a property on the given molecule.
+    The values are rounded to the specified precision and separated by the '|' character
+    in the stored string.
+
+    :param iterable: The sequence of numeric values to store. Can be a list, NumPy array,
+                     or PyTorch tensor.
+    :param mol: The RDKit molecule object on which the property will be set.
+    :param key: The name of the property to assign on the molecule.
+    :param forceoverwrite: If True, overwrite the property if it already exists.
+                           If False and the property exists, a ValueError is raised.
+    :param precision: The number of decimal places to which floating-point values are rounded
+                      before serialization.
+    :raises ValueError: If the property already exists and forceoverwrite is False.
+    :raises TypeError: if iterable is not iterable. Use mol.SetProp() directly for that.
+    """
+    if not forceoverwrite and mol.HasProp(key):
+        raise ValueError(f"Molecule already has property {key}. Either use forceoverwrite = True or use a different key.")
+    if isinstance(iterable, (np.ndarray, pt.Tensor)):
+        iterable = iterable.tolist()
+    mol.SetProp(key, "|".join(str(round(x, precision)) for x in iterable))
 
 def get_graph_from_mol(
     mol: Molecule,
