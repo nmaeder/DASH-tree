@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 from math import ceil
-from typing import List, Optional, Sequence, Tuple
+from typing import Sequence
 
 import torch
-from sklearn.model_selection import KFold
-from sklearn.model_selection import GroupShuffleSplit
+from sklearn.model_selection import GroupShuffleSplit, KFold
+from torch.utils import data
 
 from .custom_data import CustomData
 
 
-def get_split_numbers(N: int, train_ratio: Optional[float] = 0.8) -> List[float]:
+def get_split_numbers(N: int, train_ratio: float = 0.8) -> list[int]:
     """
     Basic function determining absolute split values for a dataset containing N datapoints.
 
@@ -25,18 +27,18 @@ def get_split_numbers(N: int, train_ratio: Optional[float] = 0.8) -> List[float]
 
 
 def split_data_random(
-    data_list: List[CustomData],
-    train_ratio: Optional[float] = 0.8,
-    seed: Optional[int] = 13,
-) -> Tuple[torch.utils.data.Subset]:
+    data_list: list[CustomData],
+    train_ratio: float = 0.8,
+    seed: int = 13,
+) -> tuple[data.Subset, data.Subset]:
     """
     Splits a List of CustomData in two Subsets, having a ration of train_ratio.
     A seed for the randomnumber generator can be specified.
 
     Args:
         data_list (List[CustomData]): List of Data objects
-        train_ratio (Optional[float], optional): ratio of traindata over testdata. Defaults to .8.
-        seed (Optional[int], optional): Seed for random number generator. Defaults to 13.
+        train_ratio (float, optional): ratio of traindata over testdata. Defaults to .8.
+        seed (int, optional): Seed for random number generator. Defaults to 13.
 
     Returns:
         Tuple[Subset]: train and test subset.
@@ -44,7 +46,7 @@ def split_data_random(
     N_tot = len(data_list)
     numbers = get_split_numbers(N=N_tot, train_ratio=train_ratio)
     randn_generator = torch.Generator().manual_seed(seed)
-    train_data, test_data = torch.utils.data.random_split(
+    train_data, test_data = data.random_split(
         dataset=data_list,
         lengths=numbers,
         generator=randn_generator,
@@ -53,10 +55,10 @@ def split_data_random(
 
 
 def split_data_smiles(
-    data_list: List[CustomData],
-    train_ratio: Optional[float] = 0.8,
-    seed: Optional[int] = 13,
-) -> Tuple[torch.utils.data.Subset]:
+    data_list: list[CustomData],
+    train_ratio: float = 0.8,
+    seed: int = 13,
+) -> tuple[data.Subset,data.Subset]:
     """
     Splits a List of CustomData in two Subsets, having a ration of train_ratio.
     A seed for the randomnumber generator can be specified.
@@ -64,8 +66,8 @@ def split_data_smiles(
 
     Args:
         data_list (List[CustomData]): List of Data objects
-        train_ratio (Optional[float], optional): ratio of traindata over testdata. Defaults to .8.
-        seed (Optional[int], optional): Seed for random number generator. Defaults to 13.
+        train_ratio (float, optional): ratio of traindata over testdata. Defaults to .8.
+        seed (int, optional): Seed for random number generator. Defaults to 13.
 
     Returns:
         Tuple[Subset]: train and test subset.
@@ -79,8 +81,8 @@ def split_data_smiles(
     for train_idx, test_idx in gss.split(data_list, groups=smiles_list):
         train_data = [data_list[i] for i in train_idx]
         test_data = [data_list[i] for i in test_idx]
-    train_data = torch.utils.data.Subset(train_data, indices=list(range(0, len(train_data))))
-    test_data = torch.utils.data.Subset(test_data, indices=list(range(0, len(test_data))))
+    train_data = data.Subset(train_data, indices=list(range(0, len(train_data))))
+    test_data = data.Subset(test_data, indices=list(range(0, len(test_data))))
     return train_data, test_data
 
 
@@ -89,7 +91,7 @@ def split_data_Kfold(
     n_splits: int = 5,
     split: int = 0,
     seed: int = 161311,
-) -> Tuple[Sequence[CustomData]]:
+) -> tuple[list[CustomData], list[CustomData]]:
     """
         Performs a kfold split on a List of CustomData objects,
         returning a list contianing the training, and a list containing

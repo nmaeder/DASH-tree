@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence
+from __future__ import annotations
 
 import numpy as np
 import torch as pt
@@ -8,7 +8,7 @@ from serenityff.charge.gnn.utils import CustomData, MolGraphConvFeaturizer
 from serenityff.charge.utils import Molecule
 
 
-def mols_from_sdf(sdf_file: str, removeHs: Optional[bool] = False) -> Sequence[Molecule]:
+def mols_from_sdf(sdf_file: str, removeHs: bool = False) -> Chem.SDMolSupplier:
     """Return a sequence of RDKit molecules read from an .sdf file.
 
     :param sdf_file: Path to the .sdf file.
@@ -18,7 +18,7 @@ def mols_from_sdf(sdf_file: str, removeHs: Optional[bool] = False) -> Sequence[M
     return Chem.SDMolSupplier(sdf_file, removeHs=removeHs)
 
 
-def get_mol_prop_as_np_array(prop_name: Optional[str], mol: Chem.Mol, dtype: type = float) -> np.ndarray:
+def get_mol_prop_as_np_array(prop_name: str, mol: Chem.Mol, dtype: type = float) -> np.ndarray:
     """Get atomic properties from an RDKit molecule object as an array.
 
     The property is expected to be a string of '|' separated numerical
@@ -40,7 +40,7 @@ def get_mol_prop_as_np_array(prop_name: Optional[str], mol: Chem.Mol, dtype: typ
     return array
 
 
-def get_mol_prop_as_pt_tensor(prop_name: Optional[str], mol: Chem.Mol) -> pt.Tensor:
+def get_mol_prop_as_pt_tensor(prop_name: str, mol: Chem.Mol) -> pt.Tensor:
     """Get atomic properties from an RDKit molecule object as a tensor.
 
     The property is expected to be a string of '|' separated numerical
@@ -58,8 +58,8 @@ def get_mol_prop_as_pt_tensor(prop_name: Optional[str], mol: Chem.Mol) -> pt.Ten
 def get_graph_from_mol(
     mol: Molecule,
     index: int,
-    sdf_property_name: Optional[str] = "MBIScharge",
-    allowable_set: Optional[List[str]] = [
+    sdf_property_name: str | None = "MBIScharge",
+    allowable_set: list[str] = [
         "C",
         "N",
         "O",
@@ -71,8 +71,8 @@ def get_graph_from_mol(
         "I",
         "H",
     ],
-    no_y: Optional[bool] = False,
-) -> Optional[CustomData]:
+    no_y: bool = False,
+) -> CustomData | None:
     """Create a PyTorch Geometric graph from an RDKit molecule.
 
     Returns ``None`` if the specified property is not found or contains NaN.

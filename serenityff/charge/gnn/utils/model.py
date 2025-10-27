@@ -1,8 +1,7 @@
-from typing import Optional
-
 import torch
 from torch import nn
 from torch.nn import functional as F
+
 from serenityff.charge.gnn.utils.attentive_fp import AttentiveFP
 
 
@@ -10,13 +9,13 @@ class ChargeCorrectedNodeWiseAttentiveFP(AttentiveFP):
     # TODO: add description
     def __init__(
         self,
-        in_channels: Optional[int] = 23,
-        hidden_channels: Optional[int] = 200,
-        out_channels: Optional[int] = 1,
-        edge_dim: Optional[int] = 11,
-        num_layers: Optional[int] = 5,
-        num_timesteps: Optional[int] = 2,
-        dropout: Optional[float] = 0.0,
+        in_channels: int = 23,
+        hidden_channels: int = 200,
+        out_channels: int = 1,
+        edge_dim: int = 11,
+        num_layers: int = 5,
+        num_timesteps: int = 2,
+        dropout: float = 0.0,
     ):
         super().__init__(
             in_channels,
@@ -60,13 +59,13 @@ class ChargeCorrectedNodeWiseAttentiveFP(AttentiveFP):
 class NodeWiseAttentiveFP(AttentiveFP):
     def __init__(
         self,
-        in_channels: Optional[int] = 23,
-        hidden_channels: Optional[int] = 200,
-        out_channels: Optional[int] = 1,
-        edge_dim: Optional[int] = 11,
-        num_layers: Optional[int] = 5,
-        num_timesteps: Optional[int] = 2,
-        dropout: Optional[float] = 0.0,
+        in_channels: int = 23,
+        hidden_channels: int = 200,
+        out_channels: int = 1,
+        edge_dim: int = 11,
+        num_layers: int = 5,
+        num_timesteps: int = 2,
+        dropout: float = 0.0,
     ):
         super().__init__(
             in_channels,

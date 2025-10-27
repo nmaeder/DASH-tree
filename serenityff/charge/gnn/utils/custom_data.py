@@ -1,4 +1,6 @@
-from typing import Any, Optional, Union
+from __future__ import annotations
+
+from typing import Any
 
 import numpy as np
 import torch
@@ -34,11 +36,11 @@ class CustomData(Data):
         )
 
     @property
-    def smiles(self) -> Union[str, None]:
+    def smiles(self) -> str |  None:
         return self["smiles"] if "smiles" in self._store else None
 
     @property
-    def molecule_charge(self) -> Union[int, None]:
+    def molecule_charge(self) -> int | None :
         return self["molecule_charge"] if "molecule_charge" in self._store else None
 
     def __setattr__(self, key: str, value: Any):
@@ -123,8 +125,8 @@ class GraphData:
         self,
         node_features: np.ndarray,
         edge_index: np.ndarray,
-        edge_features: Optional[np.ndarray] = None,
-        node_pos_features: Optional[np.ndarray] = None,
+        edge_features: np.ndarray | None = None,
+        node_pos_features: np.ndarray | None = None,
     ):
         """
         Parameters
@@ -184,8 +186,8 @@ class CustomGraphData(GraphData):
         self,
         node_features: np.ndarray,
         edge_index: np.ndarray,
-        edge_features: Optional[np.ndarray] = None,
-        node_pos_features: Optional[np.ndarray] = None,
+        edge_features: np.ndarray | None = None,
+        node_pos_features: np.ndarray | None  = None,
     ):
         super().__init__(
             node_features,

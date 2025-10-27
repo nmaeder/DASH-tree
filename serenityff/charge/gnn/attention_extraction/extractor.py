@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import argparse
 import os
 from math import ceil
 from shutil import make_archive, rmtree
-from typing import Optional, OrderedDict, Sequence, Tuple, Union
+from typing import OrderedDict, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -10,6 +12,12 @@ import torch
 from rdkit import Chem
 from tqdm import tqdm
 
+from serenityff.charge.gnn.attention_extraction import Explainer
+from serenityff.charge.gnn.attention_extraction.bash_templates import (
+    CLEANER_CONTENT,
+    get_lsf_worker_content,
+    get_slurm_worker_content,
+)
 from serenityff.charge.gnn.utils import (
     ChargeCorrectedNodeWiseAttentiveFP,
     NodeWiseAttentiveFP,
@@ -17,12 +25,6 @@ from serenityff.charge.gnn.utils import (
 )
 from serenityff.charge.utils import command_to_shell_file
 from serenityff.charge.utils.exceptions import ExtractionError
-from serenityff.charge.gnn.attention_extraction import Explainer
-from serenityff.charge.gnn.attention_extraction.bash_templates import (
-    CLEANER_CONTENT,
-    get_lsf_worker_content,
-    get_slurm_worker_content,
-)
 
 
 class Extractor:
@@ -37,7 +39,7 @@ class Extractor:
     def model(self) -> torch.nn.Module:
         return self._model
 
-    def _set_model(self, value: Union[str, torch.nn.Module], no_charge_correction: bool = False) -> None:
+    def _set_model(self, value: str | torch.nn.Module, no_charge_correction: bool = False) -> None:
         if isinstance(value, str):
             load = torch.load(value, map_location=torch.device("cpu"))
             try:
@@ -77,17 +79,17 @@ class Extractor:
     def _initialize_expaliner(
         self,
         model: torch.nn.Module,
-        epochs: Optional[int] = 1000,
+        epochs: int = 1000,
         no_charge_correction: bool = False,
-        verbose: Optional[bool] = False,
+        verbose: bool = False,
     ) -> None:
         """
         Initializes an instance of an Explainer.
 
         Args:
             model (torch.nn.Module): ml model to explain
-            epochs (Optional[int], optional): Epochs used to explain every node. Defaults to 2000.
-            verbose (Optional[bool], optional): Wheter to use tqdm progress bars. Defaults to False.
+            epochs (int, optional): Epochs used to explain every node. Defaults to 2000.
+            verbose (bool, optional): Wheter to use tqdm progress bars. Defaults to False.
         """
         self._set_model(model, no_charge_correction=no_charge_correction)
         self.explainer = Explainer(model=self.model, epochs=epochs, verbose=verbose)
@@ -96,8 +98,8 @@ class Extractor:
         self,
         sdf_file: str,
         scratch: str,
-        output: Optional[str] = None,
-        verbose: Optional[bool] = False,
+        output: str | None = None,
+        verbose: bool = False,
         sdf_property_name="MBIScharge",
     ) -> None:
         """
@@ -161,7 +163,6 @@ class Extractor:
             path_or_buf=out,
             index=False,
         )
-        return
 
     @staticmethod
     def _check_final_csv(sdf_file: str, csv_file: str) -> bool:
@@ -227,16 +228,16 @@ class Extractor:
     @staticmethod
     def _split_sdf(
         sdf_file: str,
-        directory: Optional[str] = f"{os.getcwd()}/sdf_data",
+        directory: str = f"{os.getcwd()}/sdf_data",
         desiredNumFiles=10000,
-    ) -> Tuple[int]:
+    ) -> tuple[int, int]:
         """
         Splits a big sdf file in a number (<10000) of smaller sdf file,
         to make parallelization on a cluster possible.
 
         Args:
             sdf_file (str): Big .sdf file to be split
-            directory (Optional[str], optional): Where to store the smaller .sdf file. \
+            directory (str, optional): Where to store the smaller .sdf file. \
                 Defaults to f"{os.getcwd()}/sdf_data".
 
         Returns:
@@ -277,8 +278,8 @@ class Extractor:
     def _summarize_csvs(
         num_files: int,
         batch_size: int,
-        directory: Optional[str] = f"{os.getcwd()}/sdf_data",
-        combined_filename: Optional[str] = "combined",
+        directory: str = f"{os.getcwd()}/sdf_data",
+        combined_filename: str = "combined",
     ) -> None:
         """
         Takes all the csv generated with the extract method and combines
@@ -286,9 +287,9 @@ class Extractor:
         Args:
             num_files (int): number of csv files in the directory.
             batch_size (int): number of molecules per csv file.
-            directory (Optional[str], optional): directory where the \
+            directory (str, optional): directory where the \
                 .sdf files are stored. Defaults to f"{os.getcwd()}/sdf_data".
-            combined_filename (Optional[str], optional): name of the final, \
+            combined_filename (str, optional): name of the final, \
                 big .csv file. Defaults to "combined".
         """
         if not combined_filename.endswith(".csv"):
@@ -331,10 +332,10 @@ class Extractor:
         model: Union[str, torch.nn.Module],
         sdf_index: int,
         scratch: str,
-        epochs: Optional[int] = 1000,
-        working_dir: Optional[str] = None,
-        verbose: Optional[bool] = False,
-        sdf_property_name: Optional[str] = "MBIScharge",
+        epochs: int = 1000,
+        working_dir: str | None = None,
+        verbose: bool = False,
+        sdf_property_name: str = "MBIScharge",
         no_charge_correction: bool = False,
     ) -> None:
         """
@@ -345,8 +346,8 @@ class Extractor:
             model (Union[str, torch.nn.Module]): Model or path to model to be explained.
             sdf_index (int): index of the .sdf file. Intended to work with split_sdf()
             scratch (str): Only use if working on a HPC Cluster.
-            epochs (Optional[int], optional): number of epochs per prediction. Defaults to 2000.
-            verbose (Optional[bool], optional): wheter to show tqdm update bar. Defaults to False.
+            epochs (int, optional): number of epochs per prediction. Defaults to 2000.
+            verbose (bool, optional): wheter to show tqdm update bar. Defaults to False.
         """
         sdf_file = f"sdf_data/{sdf_index}.sdf" if not working_dir else f"{working_dir.rstrip('/')}/{sdf_index}.sdf"
         print(scratch, working_dir)
@@ -358,11 +359,10 @@ class Extractor:
             no_charge_correction=no_charge_correction,
         )
         extractor._explain_molecules_in_sdf(sdf_file=sdf_file, scratch=scratch, sdf_property_name=sdf_property_name)
-        return
 
     @staticmethod
     def _write_worker(
-        directory: Optional[str] = None,
+        directory: str | None = None,
         useSlurm=False,
     ) -> None:
         """
@@ -373,10 +373,9 @@ class Extractor:
         with open(file, "w") as worker:
             worker.write(get_slurm_worker_content() if useSlurm else get_lsf_worker_content())
         os.system(f"chmod u+x {file}")
-        return
 
     @staticmethod
-    def _write_cleaner(directory: Optional[str] = None) -> None:
+    def _write_cleaner(directory: str | None = None) -> None:
         """
         Writes a basch script called cleaner.sh, that cleans all the mess created by the extractionprocess.
         it runs the Extractor._clean_up() function.
@@ -386,14 +385,13 @@ class Extractor:
         with open(file, mode="w") as cleaner:
             cleaner.write(CLEANER_CONTENT)
         os.system(f"chmod u+x {file}")
-        return
 
     @staticmethod
     def _clean_up(
         num_files: int,
         batch_size: int,
         sdf_file: str,
-        working_dir: Optional[str] = None,
+        working_dir: str | None = None,
     ) -> None:
         """
         Cleans up all the messy files after the feature extraction worked flawlessly.
@@ -430,19 +428,18 @@ class Extractor:
                 "Oops Something went wrong with the extraction. \
                 Make sure, all paths provided are correct."
             )
-        return
 
     @staticmethod
     def run_extraction_local(
-        ml_model=Union[str, torch.nn.Module],
-        sdf_file=str,
-        output: Optional[str] = "combined.csv",
-        epochs: Optional[int] = 1000,
-        verbose: Optional[bool] = True,
-        verbose_every_atom: Optional[bool] = False,
+        ml_model: str | torch.nn.Module,
+        sdf_file: str,
+        output: str = "combined.csv",
+        epochs: int = 1000,
+        verbose: bool = True,
+        verbose_every_atom: bool = False,
         no_charge_correction: bool = False,
-        sdf_property_name: Optional[str] = "MBIScharge",
-    ) -> None:
+        sdf_property_name: str = "MBIScharge",
+    ) -> Extractor:
         """
         Use this function if you want to run the feature extraction on your local machine.
         Depending on the number of files, this can take up to hours!!!
@@ -455,7 +452,6 @@ class Extractor:
             > -m:   path to the ml model .pt file
             > -s:   path to the .sdf file containing the molecules.
             > -p:   name of the property in the sdf to explain. Defaults to 'MBIScharge'.
-
         """
         extractor = Extractor()
         extractor._initialize_expaliner(
@@ -517,7 +513,6 @@ class Extractor:
         )
         os.system(lsf_command)
         command_to_shell_file(lsf_command, "run_cleanup.sh")
-        return
 
     @staticmethod
     def run_extraction_slurm(args: Sequence[str]) -> None:

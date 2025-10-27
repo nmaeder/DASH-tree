@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import contextlib
 import os
-from typing import Callable, List, Optional, OrderedDict, Sequence, Tuple, Union
+from typing import Callable, List, OrderedDict, Sequence, Tuple, Union
 from warnings import warn
 
 from tqdm import tqdm
-
 
 try:
     from typing import Literal
@@ -12,12 +13,13 @@ except ImportError:
     from typing_extensions import Literal
 import numpy as np
 import torch
+from torch.utils.data import Subset
 from torch_geometric.loader import DataLoader
 
 from serenityff.charge.gnn.utils import (
     ChargeCorrectedNodeWiseAttentiveFP,
-    NodeWiseAttentiveFP,
     CustomData,
+    NodeWiseAttentiveFP,
     get_graph_from_mol,
     mols_from_sdf,
     split_data_Kfold,
@@ -39,10 +41,10 @@ class Trainer:
 
     def __init__(
         self,
-        device: Union[torch.device, Literal["cpu", "cuda", "available"]] = "available",
-        loss_function: Optional[Callable] = torch.nn.functional.mse_loss,
-        physicsInformed: Optional[bool] = True,
-        seed: Optional[int] = 161311,
+        device: torch.device | Literal["cpu", "cuda", "available"] = "available",
+        loss_function: Callable | None = torch.nn.functional.mse_loss,
+        physicsInformed: bool = True,
+        seed: int = 161311,
         verbose: bool = False,
     ) -> None:
         self.device = device
@@ -80,11 +82,11 @@ class Trainer:
         return self._data
 
     @property
-    def train_data(self) -> torch.utils.data.Subset:
+    def train_data(self) -> Subset:
         return self._train_data
 
     @property
-    def eval_data(self) -> torch.utils.data.Subset:
+    def eval_data(self) -> Subset:
         return self._eval_data
 
     @property
@@ -100,7 +102,7 @@ class Trainer:
         return self.device == torch.device("cuda")
 
     @model.setter
-    def model(self, value: Union[str, torch.nn.Module]) -> None:
+    def model(self, value: str | torch.nn.Module) -> None:
         if isinstance(value, str):
             try:
                 load = torch.load(value, map_location=torch.device("cpu"))
@@ -130,7 +132,6 @@ class Trainer:
                     or the str path to a .pt model holding either of the aforementioned types."
             )
         self._update_device()
-        return
 
     @optimizer.setter
     def optimizer(self, value: torch.optim.Optimizer) -> None:
@@ -165,7 +166,7 @@ class Trainer:
             raise TypeError("seed has to be of type int")
 
     @device.setter
-    def device(self, value: Union[torch.device, Literal["cpu", "cuda", "available"]]):
+    def device(self, value: torch.device | Literal["cpu", "cuda", "available"]):
         if isinstance(value, torch.device):
             self._device = value
             self._update_device()
@@ -173,10 +174,7 @@ class Trainer:
         elif isinstance(value, str):
             # I think that would be a nice conveniance option
             if value == "available":
-                if torch.cuda.is_available():
-                    value = "cuda"
-                else:
-                    value = "cpu"
+                value = "cuda" if torch.cuda.is_available() else "cpu"
             if value.lower() in ["cpu", "cuda"]:
                 self._device = torch.device(value.lower())
                 self._update_device()
@@ -224,7 +222,7 @@ class Trainer:
     def gen_graphs_from_sdf(
         self,
         sdf_file: str,
-        allowable_set: Optional[List[int]] = [
+        allowable_set: list[int] = [
             "C",
             "N",
             "O",
@@ -236,7 +234,7 @@ class Trainer:
             "I",
             "H",
         ],
-        verbose: bool = verbose,
+        verbose: bool | None = None,
         sdf_property_name: str = "MBIScharge",
     ) -> None:
         """
@@ -245,8 +243,10 @@ class Trainer:
 
         Args:
             sdf_file (str): path to .sdf file holding the molecules.
-            allowable_set (Optional[List[int]], optional): Allowable atom types. Defaults to [ "C", "N", "O", "F", "P", "S", "Cl", "Br", "I", "H", ].
+            allowable_set (List[int], optional): Allowable atom types. Defaults to [ "C", "N", "O", "F", "P", "S", "Cl", "Br", "I", "H", ].
         """
+        if verbose is None:
+            verbose = self.verbose
         mols = mols_from_sdf(sdf_file)
         self.data = [
             get_graph_from_mol(
@@ -277,27 +277,27 @@ class Trainer:
 
     def prepare_training_data(
         self,
-        split_type: Optional[Literal["random", "kfold", "smiles"]] = "random",
-        train_ratio: Optional[float] = 0.8,
-        n_splits: Optional[int] = 5,
-        split: Optional[int] = 0,
-        seed: Optional[int] = None,
+        split_type: Literal["random", "kfold", "smiles"] = "random",
+        train_ratio: float = 0.8,
+        n_splits: int = 5,
+        split: int = 0,
+        seed: int |None = None,
     ) -> None:
         """
         Splits training data into test data and eval data. At the moment, random, kfold and smiles split are implemented.
 
         Args:
-            split_type (Optional[Literal[&quot;random&quot;, &quot;kfold&quot;]], optional): What split type you want. Defaults to "random".
-            train_ratio (Optional[float], optional): ratio of train/eval in random split. Defaults to 0.8.
-            n_splits (Optional[int], optional): number of splits in the kfold split. Defaults to 5.
-            split (Optional[int], optional): which of the n_splits you want. Defaults to 0.
-            seed (Optional[int], optional): random number seed for splits
+            split_type (Literal[&quot;random&quot;, &quot;kfold&quot;], optional): What split type you want. Defaults to "random".
+            train_ratio (float, optional): ratio of train/eval in random split. Defaults to 0.8.
+            n_splits (int, optional): number of splits in the kfold split. Defaults to 5.
+            split (int, optional): which of the n_splits you want. Defaults to 0.
+            seed (int, optional): random number seed for splits
 
         Raises:
             NotImplementedError: If a splittype other than 'random', 'kfold' or 'smiles' is chosen.
         """
         try:
-            self.data
+            _ = self.data
         except AttributeError:
             warn("No data has been loaded to this trainer. Load Data firstt!")
             return
@@ -352,7 +352,7 @@ class Trainer:
                      and a loss_function have been set in this instance!"
             )
 
-    def validate_model(self, verbose: bool = verbose) -> List[float]:
+    def validate_model(self, verbose: bool | None= None) -> list[float]:
         """
         predicts values for self.eval_data and returns the losses.
 
@@ -363,6 +363,8 @@ class Trainer:
             self._is_initialized()
         except NotInitializedError as e:
             raise e
+        if verbose is None:
+            verbose = self.verbose
         self.model.eval()
         val_loss = []
         loader = DataLoader(self.eval_data, batch_size=64)
@@ -385,17 +387,17 @@ class Trainer:
     def train_model(
         self,
         epochs: int,
-        batch_size: Optional[int] = 64,
-        verbose: Optional[bool] = verbose,
+        batch_size: int = 64,
+        verbose: bool | None = None,
         save_after_every_step: bool = False,
         save_best_model: bool = False,
-    ) -> Tuple[Sequence[float]]:
+    ) -> tuple[Sequence[float], Sequence[float]]:
         """
         Trains self.model if everything is initialized.
 
         Args:
             epochs (int): epochs to be trained.
-            batch_size (Optional[int], optional): batchsize to be used in training. Defaults to 64.
+            batch_size (int, optional): batchsize to be used in training. Defaults to 64.
         Raises:
             NotInitializedError: Raised in first two lines.
 
@@ -407,6 +409,8 @@ class Trainer:
             self._is_initialized()
         except NotInitializedError as e:
             raise e
+        if verbose is None:
+            verbose = self.verbose
         train_loss = []
         eval_losses = []
         lowest_loss = float("inf")
@@ -467,14 +471,14 @@ class Trainer:
 
     def predict(
         self,
-        data: Union[Molecule, Sequence[Molecule], CustomData, Sequence[CustomData]],
-        verbose: bool = verbose,
+        data: Chem.Mol | Sequence[Chem.Mol] | CustomData | Sequence[CustomData],
+        verbose: bool | None = None,
     ) -> Sequence[Sequence[float]]:
         """
         Predict values for graphs given in data using self.model.
 
         Args:
-            data (Union[Molecule, Sequence[Molecule], CustomData, Sequence[CustomData]]): data to be predict values for.
+            data (Molecule | Sequence[Molecule] | CustomData | Sequence[CustomData]]): data to be predict values for.
 
         Raises:
             NotInitializedError: If self.model is not set yet.
@@ -487,6 +491,8 @@ class Trainer:
             self.model
         except AttributeError:
             raise NotInitializedError("load a model before predicting!")
+        if verbose is None:
+            verbose = self.verbose
         if not isinstance(data, list):
             data = [data]
         if isinstance(data[0], Molecule):
@@ -518,32 +524,36 @@ class Trainer:
                 torch.cuda.empty_cache()
         return predictions
 
-    def save_model_statedict(self, name: Optional[str] = "_model_sd.pt", verbose: bool = verbose) -> None:
+    def save_model_statedict(self, name: str = "_model_sd.pt", verbose: bool | None = None) -> None:
         """
         Saves a models statedict to self.save_prefix + name
 
         Args:
-            name (Optional[str], optional): name the model to be saved under. Defaults to "_model_sd.pt".
+            name (str, optional): name the model to be saved under. Defaults to "_model_sd.pt".
         """
         try:
             self.model
         except AttributeError:
             raise NotInitializedError("No model initialized, cannot save nothing ;^)")
+        if verbose is None:
+            verbose = self.verbose
         torch.save(self.model.state_dict(), f"{self.save_prefix}{name}")
         if verbose:
             print(f"Models statedict saved to {self.save_prefix}{name}")
 
-    def save_model(self, name: Optional[str] = "_model.pt", verbose: bool = verbose) -> None:
+    def save_model(self, name: str = "_model.pt", verbose: bool | None = None) -> None:
         """
         Saves a models statedict to self.save_prefix + name
 
         Args:
-            name (Optional[str], optional): name the model to be saved under. Defaults to "_model_sd.pt".
+            name (str, optional): name the model to be saved under. Defaults to "_model_sd.pt".
         """
         try:
             self.model
         except AttributeError:
             raise NotInitializedError("No model initialized, cannot save nothing ;^)")
+        if verbose is None:
+            verbose = self.verbose
         torch.save(self.model, f"{self.save_prefix}{name}")
         if verbose:
             print(f"Models statedict saved to {self.save_prefix}{name}")

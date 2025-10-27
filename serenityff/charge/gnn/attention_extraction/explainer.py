@@ -1,11 +1,11 @@
-from typing import List, Optional, Tuple
+from __future__ import annotations
 
 from torch import Tensor
 from torch.nn import Module
-
 from torch_geometric.explain.algorithm.gnn_explainer import (
     GNNExplainer_ as GNNExplainer,
 )
+
 from serenityff.charge.gnn.utils import CustomData
 
 
@@ -18,14 +18,14 @@ class Explainer:
     def __init__(
         self,
         model: Module,
-        epochs: Optional[int] = 2000,
-        verbose: Optional[bool] = False,
+        epochs: int = 2000,
+        verbose: bool = False,
     ) -> None:
         """
         Args:
             model (Module): model to be
-            epochs (Optional[int], optional): _description_. Defaults to 2000.
-            verbose (Optional[bool], optional): _description_. Defaults to False.
+            epochs (int, optional): _description_. Defaults to 2000.
+            verbose (bool, optional): _description_. Defaults to False.
         """
         self.gnn_explainer = GNNExplainer(
             model=model,
@@ -56,7 +56,7 @@ class Explainer:
         self._gnnverbose = value
         self._gnn_explainer.log = value
 
-    def _explain(self, *args, **kwargs) -> Tuple[Tensor, Tensor]:
+    def _explain(self, *args, **kwargs) -> tuple[Tensor, Tensor]:
         """
         parser to the GNNExplainers' explain node Function.
         Give all args also needed in the models forward function.
@@ -70,7 +70,7 @@ class Explainer:
         self,
         node_idx: int,
         graph: CustomData,
-    ) -> Tuple[Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor]:
         """
         Explains a given node in an Graph object.
 
@@ -94,7 +94,7 @@ class Explainer:
     def explain_molecule(
         self,
         graph: CustomData,
-    ) -> Tuple[List[Tensor]]:
+    ) -> tuple[list[Tensor], list[Tensor]]:
         """
         Explains all Atom Predictions in a Molecule
 
@@ -104,8 +104,8 @@ class Explainer:
         Returns:
             Tuple[List[Tensor]]: Lists of Node and Edge Attentions.
         """
-        nodes: List[Tensor] = []
-        edges: List[Tensor] = []
+        nodes: list[Tensor] = []
+        edges: list[Tensor] = []
         for i in range(graph.num_nodes):
             node, edge = self._explain_atom(node_idx=i, graph=graph)
             nodes.append(node)
