@@ -96,6 +96,7 @@ def test_get_mol_prop_as_np_array_raises_type_error_on_nan(
     with pytest.raises(TypeError, match="Nan found in test_prop_nan"):
         get_mol_prop_as_np_array("test_prop_nan", sample_mol_with_nan_prop)
 
+
 @pytest.mark.parametrize("it_type", (list, np.array, pt.Tensor))
 def test_set_mol_prop_success_array(it_type, sample_mol_missing_prop):
     """Test setting mol prop from different iterable types."""
@@ -105,11 +106,16 @@ def test_set_mol_prop_success_array(it_type, sample_mol_missing_prop):
     set_mol_prop(array, sample_mol_missing_prop, "test")
     assert sample_mol_missing_prop.GetProp("test") == goal
 
+
 def test_set_mol_prop_overwrite(sample_mol_with_prop):
     """Test ValueError is thrown when mol already has this property."""
-    with pytest.raises(ValueError, match="Molecule already has property test_prop. Either use forceoverwrite = True or use a different key."):
+    with pytest.raises(
+        ValueError,
+        match=r"Molecule already has property test_prop. Either use forceoverwrite = True or use a different key.",
+    ):
         set_mol_prop([], sample_mol_with_prop, "test_prop")
     set_mol_prop([], sample_mol_with_prop, "test_prop", True)
+
 
 def test_set_mol_prop_types(sample_mol_missing_prop):
     """Test TypeError is raised when `iterable` is not iterable."""

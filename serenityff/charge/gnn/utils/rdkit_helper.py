@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Any, List, Optional, Sequence, Union
+from typing import List, Optional, Sequence
 
 import numpy as np
 import torch as pt
@@ -55,7 +55,8 @@ def get_mol_prop_as_pt_tensor(prop_name: Optional[str], mol: Chem.Mol) -> pt.Ten
     """
     return pt.from_numpy(get_mol_prop_as_np_array(prop_name=prop_name, mol=mol, dtype=np.float32))
 
-def set_mol_prop(iterable: Iterable, mol: Chem.Mol, key: str, forceoverwrite: bool = False, precision: int = 3)-> None:
+
+def set_mol_prop(iterable: Iterable, mol: Chem.Mol, key: str, forceoverwrite: bool = False, precision: int = 3) -> None:
     """Set a numeric property on an RDKit molecule from an iterable of values.
 
     This function converts a sequence of numeric values (such as a list, NumPy array,
@@ -75,10 +76,13 @@ def set_mol_prop(iterable: Iterable, mol: Chem.Mol, key: str, forceoverwrite: bo
     :raises TypeError: if iterable is not iterable. Use mol.SetProp() directly for that.
     """
     if not forceoverwrite and mol.HasProp(key):
-        raise ValueError(f"Molecule already has property {key}. Either use forceoverwrite = True or use a different key.")
+        raise ValueError(
+            f"Molecule already has property {key}. Either use forceoverwrite = True or use a different key."
+        )
     if isinstance(iterable, (np.ndarray, pt.Tensor)):
         iterable = iterable.tolist()
     mol.SetProp(key, "|".join(str(round(x, precision)) for x in iterable))
+
 
 def get_graph_from_mol(
     mol: Molecule,
